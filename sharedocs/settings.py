@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-y+oc$5mc=zcqozvy%(@r&f%_&r9bu-uc2c4vx7%b&3#74^u65t
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['bf917395343d45c1959505b9718c47a1.vfs.cloud9.us-east-1.amazonaws.com']
 
 
 # Application definition
@@ -123,3 +123,9 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+APPEND_SLASH = False
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://bf917395343d45c1959505b9718c47a1.vfs.cloud9.us-east-1.amazonaws.com',
+]

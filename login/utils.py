@@ -26,12 +26,11 @@ def table_checker(Table_Name):
             return True
 
     except ClientError as e:
-     
+        
         return False
 
     except Exception as e:
+        
         print(e)
         return False
-
-
 

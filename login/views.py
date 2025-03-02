@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-
+from django.http import HttpResponseRedirect
 
 
 #dynmo db 
@@ -36,13 +36,14 @@ def home_page(req):
         return render(req, 'Error/sorry.html')
 # this will redirect to signup form 
 def signup_page(req):
-    try : 
-        return render(req, 'user/signup.html')
-    except : 
-        return render(req, 'Error/sorry.html')
+    #try : 
+       return render(req, 'user/signup.html')
+    #except : 
+        #return render(req, 'Error/sorry.html')
 
 
 # this is backend logic to register user 
+
 def register_user(req):
     try : 
         #check for table / create table 
@@ -51,9 +52,9 @@ def register_user(req):
         if(res == True):
             
             # get email , name and password of user to be updated inside the table 
-            email = req.Post.get('email')
-            name = req.Post.get('name')
-            password = req.Post.get('password')
+            email = req.POST.get('email')
+            name = req.POST.get('name')
+            password = req.POST.get('password')
             
             
             # hash password to be stored 
@@ -70,7 +71,7 @@ def register_user(req):
                 )
                 
             # redirect to login page
-            return redirect('login')
+            return HttpResponseRedirect('/login')
                 
                 
     except ClientError as e  :
