@@ -2,9 +2,17 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponseRedirect
 from django.views.decorators.csrf import csrf_exempt
 
+# async 
+import asyncio
 
 # uuid 
 import uuid 
+
+#token
+import jwt
+from datetime import datetime
+
+
 #dynmo db 
 import boto3
 from botocore.exceptions import ClientError
@@ -24,12 +32,13 @@ import bcrypt
 #complete signup.html -done 
 # create login.html under user -done
 # create route to render to user - done
-# improve sorry to handle different type of error situation
+# improve sorry to handle different type of error situation -done
+# created a user already exist html file ass well and also done with logic part  - done
 
 # task to be done in backend 
-# input validation inside register_user function to be sure that we wont face exceptions in backend 
-# create a login route : this route will send back a cookie ( jwt mostly ) used to verify user , also will store ip address with cookie inside a db 
-# on singup route do check if a user email already exist
+# input validation inside register_user and login_user function to be sure that we wont face exceptions in backend 
+# create a login route : this route will send back a cookie ( jwt mostly ) used to verify user - done
+# on singup route do check if a user email already exist -done
 
 # Create your views here.
 
@@ -75,20 +84,33 @@ def register_user(req):
         #add to table 
         table = dynamodb.Table('user')
         
-        #uuid 
+        # checking if email already exist 
+        
+        response = table.scan(
+            FilterExpression="email = :email",
+            ExpressionAttributeValues={":email": email})
+        
+        
+    
+        if response['Items']:  # If the user exists, show error
+            return render(req, 'Error/userAlreadyExist.html')
+            #uuid 
         unique_id = str(uuid.uuid4())
         
         added_to_table = table.put_item(
         Item={
-        'id' : unique_id, 
-        'email': email,
-        'name': name,
-        'password': hashed_pw
-         })
+                'id' : unique_id, 
+                'email': email,
+                'name': name,
+                'password': hashed_pw
+        })
 
                 
         # redirect to login page
-        return HttpResponseRedirect('/login')
+        return HttpResponseRedirect('/login')    
+        
+      
+      
                 
                 
     except ClientError as e  :
@@ -101,3 +123,54 @@ def register_user(req):
         print()
         return redirect('/signup')
         
+@csrf_exempt
+def login_user(req):
+    # this route will take email and password check them and send cookie in return 
+    # also will store that cookie , ip and user email inside a table in db to keep a track
+    
+    try :
+        
+        #take data from req body
+        user_email = req.POST.get('email')
+        password = req.POST.get('password')
+        # input validation function to be called 
+        
+        
+        
+        table = dynamodb.Table('user')
+        
+        response = table.scan(
+            FilterExpression="email = :email",
+            ExpressionAttributeValues={":email": user_email})
+        
+        
+    
+        if response != [] :
+            user_password = response['Items'][0].get('password')
+            password_result = bcrypt.checkpw(password.encode('utf-8'), user_password.encode('utf-8'))
+            
+            if(password_result ==True):
+                now = datetime.now()
+                session_token = jwt.encode({
+                    'date' : now , 
+                    'email' : user_email ,
+                    'password' : password
+                },
+                "dsjnskg"  , 
+                algorithms=["HS256"])
+                
+                return response.set_cookie('session_token', session_token )
+        else : 
+            
+            return render(req, 'Error/sorry.html')
+            
+        
+    except ClientError as e  :
+        # redirect to home sry page 
+        print(e)
+        return render(req, 'Error/sorry.html')
+    
+    except Exception as e:
+        
+        print(e)
+        return render(req, 'Error/sorry.html')
