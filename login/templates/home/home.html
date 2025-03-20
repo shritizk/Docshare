@@ -1,21 +1,27 @@
-<script type="text/javascript" src=""></script>
-<header>
-    <title>Share Docs</title>
+<head>
+    <title>Team Task Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
-</header>
-<body class="bg-gray-100">
-    <nav class="bg-white shadow-md p-4 flex justify-between items-center">
-        <h1 class="text-xl font-bold">Share Docs</h1>
-        <div>
-            <a href="/login" class="bg-blue-500 text-white px-4 py-2 rounded-md mr-2 hover:bg-blue-600">Login</a>
-            <a href="/signup" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Sign Up</a>
+</head>
+<body class="bg-gray-900 text-gray-200">
+    <nav class="bg-gray-800 shadow-md p-4 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-white">📄 ShareDocs</h1>
+        <div id="nav-links">
+            {% if logged_in %}
+                <a href="/dashboard/profile" class="bg-purple-500 text-white px-4 py-2 rounded-lg mr-2 hover:bg-purple-600 transition">Dashboard</a>
+                <a href="/logout" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition">Logout</a>
+            {% else %}
+                <a href="/login" class="bg-blue-500 text-white px-4 py-2 rounded-lg mr-2 hover:bg-blue-600 transition">Login</a>
+                <a href="/signup" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">Sign Up</a>
+            {% endif %}
         </div>
     </nav>
-    <main class="flex flex-col items-center justify-center h-screen text-center px-4">
-        <h2 class="text-2xl font-semibold mb-4">A Reliable Document Sharing Platform</h2>
-        <p class="text-gray-700 max-w-md">
-            Share Docs is a platform that allows users to share documents seamlessly. Powered by AWS,
-            it ensures efficiency and reliability for a smooth user experience.
+
+    <main class="flex flex-col items-center justify-center h-screen text-center px-6">
+        <h2 class="text-5xl font-extrabold text-white mb-6">🚀 Seamless Document Sharing</h2>
+        <p class="text-gray-300 max-w-2xl leading-relaxed text-lg mb-8">
+            A secure and efficient platform for sharing documents effortlessly. Experience the next level of productivity.
         </p>
+        <a href="/dashboard" class="bg-purple-500 text-white px-6 py-3 text-lg rounded-lg hover:bg-purple-600 transition shadow-lg">Get Started</a>
     </main>
 </body>
+

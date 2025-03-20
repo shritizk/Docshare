@@ -10,8 +10,13 @@ import uuid
 
 #token
 import jwt
-from datetime import datetime
+import json
 
+# env 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 #dynmo db 
 import boto3
@@ -19,7 +24,7 @@ from botocore.exceptions import ClientError
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1') #as we only have limited access to location , i made region static
 
 #utils 
-from .utils import table_checker
+from  .utils import table_checker
 
 #hashing
 import bcrypt
@@ -34,6 +39,8 @@ import bcrypt
 # create route to render to user - done
 # improve sorry to handle different type of error situation -done
 # created a user already exist html file ass well and also done with logic part  - done
+# if user is loged in edit home to new template -done
+# if user enter wrong password change it - done 
 
 # task to be done in backend 
 # input validation inside register_user and login_user function to be sure that we wont face exceptions in backend 
@@ -44,11 +51,29 @@ import bcrypt
 
 
 #this one will redirect to home page 
+
+
+
 def home_page(req):
-    try : 
-        return render(req, 'home/home.html')
-    except : 
+    try:
+        session_token = req.COOKIES.get('session_token')
+
+        if session_token:
+            try:
+                jwt.decode(session_token, SECRET_KEY, algorithms=["HS256"])
+                logged_in = True  
+            except jwt.ExpiredSignatureError:
+                logged_in = False 
+            except jwt.InvalidTokenError:
+                logged_in = False  
+        else:
+            logged_in = False  
+
+        return render(req, 'home/home.html', {'logged_in': logged_in })
+
+    except:
         return render(req, 'Error/sorry.html')
+
 # this will redirect to signup form 
 def signup_page(req):
     try : 
@@ -92,7 +117,7 @@ def register_user(req):
         
         
     
-        if response['Items']:  # If the user exists, show error
+        if response['Items']: 
             return render(req, 'Error/userAlreadyExist.html')
             #uuid 
         unique_id = str(uuid.uuid4())
@@ -149,17 +174,39 @@ def login_user(req):
             user_password = response['Items'][0].get('password')
             password_result = bcrypt.checkpw(password.encode('utf-8'), user_password.encode('utf-8'))
             
+            user_id = response['Items'][0].get('id')
+            user_name = response['Items'][0].get('name')
+            user_bio = response['Items'][0].get('name') or ""            
+            
             if(password_result ==True):
-                now = datetime.now()
                 session_token = jwt.encode({
-                    'date' : now , 
+                    'user_id' : user_id,
                     'email' : user_email ,
-                    'password' : password
+                    'name' : user_name ,
+                    'bio' : user_bio
                 },
-                "dsjnskg"  , 
-                algorithms=["HS256"])
+                SECRET_KEY  )
                 
-                return response.set_cookie('session_token', session_token )
+                user_email = response['Items'][0].get('email')
+                user_name = response['Items'][0].get('name')
+                user_id = response['Items'][0].get('id')
+                user_bio = response['Items'][0].get('bio') or  ""
+                
+                user_data =  {
+                    'id' : user_id ,
+                    'email' :user_email,
+                    'username' : user_name,
+                    'bio' : user_bio
+                }
+                
+                response = redirect('/dashboard/profile')
+                response.set_cookie('session_token', session_token)
+                
+
+                return response
+            else : 
+                return render(req,'Error/wrongPass.html')
+       
         else : 
             
             return render(req, 'Error/sorry.html')
@@ -174,3 +221,80 @@ def login_user(req):
         
         print(e)
         return render(req, 'Error/sorry.html')
+        
+def logout_user(request):
+    response = HttpResponseRedirect('/')  
+    response.delete_cookie('session_token')  
+    return response
+    
+    
+
+# edit bio            
+def new_bio(req) : 
+    
+    session_token = req.COOKIES.get('session_token')
+    try:
+
+      if session_token:
+            
+        decode = jwt.decode(session_token, SECRET_KEY, algorithms=["HS256"])
+               
+        if decode:
+                  
+            user_id = decode.get('user_id')
+            
+            new_bio = req.POST.get('bio')
+            
+            table = dynamodb.Table('user')
+            
+            response = table.update_item(
+            Key={'id': user_id  },
+            UpdateExpression="SET bio = :bio",
+            ExpressionAttributeValues={
+                ':bio': new_bio
+            },
+            ReturnValues="UPDATED_NEW"
+            )
+            
+            if 'Attributes' in response:
+                
+                
+                response = table.scan(
+                FilterExpression="id = :id",
+                ExpressionAttributeValues={":id": user_id})
+                
+                user_email = response['Items'][0].get('email')
+                user_name = response['Items'][0].get('name')
+                user_id = response['Items'][0].get('id')
+                user_bio = response['Items'][0].get('bio') or  ""
+                
+                
+                session_token = jwt.encode({
+                    'user_id' : user_id,
+                    'email' : user_email ,
+                    'name' : user_name ,
+                    'bio' : user_bio
+                },
+                SECRET_KEY  )
+                
+                user_data =  {
+                    'id' : user_id ,
+                    'email' :user_email,
+                    'username' : user_name,
+                    'bio' : user_bio
+                }
+                
+                response = redirect('/dashboard/profile')
+                response.set_cookie('session_token', session_token)   
+                return response
+                
+            else:
+                
+                return render(req, 'Error/sorry.html')
+                  
+    except Exception as e   :
+      
+        print(e)
+        return render(req, 'Error/sorry.html')
+        
+    

@@ -37,7 +37,7 @@ def s3_bucket(bucket_name):
      
     try :
         
-        s3_client = boto3.client('s3')
+        s3_client = boto3.client('s3',region_name='us-east-1')
         
         s3_client.head_bucket(Bucket=bucket_name)
         
@@ -53,8 +53,10 @@ def s3_bucket(bucket_name):
             )
             
             waiter = s3_client.get_waiter('bucket_exists')
-            waiter.wait(Bucket=bucket_name)
+            wait = waiter.wait(Bucket=bucket_name)
             
+            print(wait)
+                
             return True 
         
         except Exception as e:

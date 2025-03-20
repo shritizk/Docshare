@@ -3,6 +3,9 @@ from botocore.exceptions import ClientError
 
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 
+
+
+
 def table_checker(Table_Name):
     try:
         table = dynamodb.Table(Table_Name)
