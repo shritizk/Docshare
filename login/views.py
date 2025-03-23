@@ -21,7 +21,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 #dynmo db 
 import boto3
 from botocore.exceptions import ClientError
-dynamodb = boto3.resource('dynamodb', region_name='us-east-1') #as we only have limited access to location , i made region static
+dynamodb = boto3.resource('dynamodb', region_name='us-east-1') 
 
 #utils 
 from  .utils import table_checker
@@ -224,7 +224,8 @@ def login_user(req):
         
 def logout_user(request):
     response = HttpResponseRedirect('/')  
-    response.delete_cookie('session_token')  
+    response.delete_cookie('session_token')
+    response.delete_cookie('content')
     return response
     
     

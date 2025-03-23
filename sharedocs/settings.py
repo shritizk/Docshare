@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'login.apps.LoginConfig',
     'dashboard.apps.DashboardConfig',
     'share.apps.ShareConfig',
+    'files.apps.FilesConfig'
 
 ]
 
