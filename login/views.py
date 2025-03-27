@@ -17,6 +17,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
+arn = os.getenv("arn")
 
 #dynmo db 
 import boto3
@@ -24,7 +25,7 @@ from botocore.exceptions import ClientError
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1') 
 
 #utils 
-from  .utils import table_checker
+from aws_service.aws_service import *
 
 #hashing
 import bcrypt
@@ -96,30 +97,36 @@ def register_user(req):
             
         # get email , name and password of user to be updated inside the table 
         email = req.POST.get('email')
+        
+        # try to send email to verify 
+        
+        try : 
+            
+             #check for table / create table 
+            res = table_checker('user')
+            
+            if res == False :
+                
+                return render(req, 'Error/sorry.html')
+            
+            
+            res = scan_dynmo({"search" : "email" , "data" : user_email})
+            
+            if res.get('status') == True:
+                return render(req, 'Error/userAlreadyExist.html')
+                
+        except Exception as e :
+                
+                return HttpResponseRedirect('/login')  
+        
+        
         name = req.POST.get('name')
         password = req.POST.get('password')
-            
             
         # hash password to be stored 
         hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             
-        #check for table / create table 
-        res = table_checker('user')
-        
-        #add to table 
-        table = dynamodb.Table('user')
-        
-        # checking if email already exist 
-        
-        response = table.scan(
-            FilterExpression="email = :email",
-            ExpressionAttributeValues={":email": email})
-        
-        
-    
-        if response['Items']: 
-            return render(req, 'Error/userAlreadyExist.html')
-            #uuid 
+        #uuid 
         unique_id = str(uuid.uuid4())
         
         added_to_table = table.put_item(
@@ -129,14 +136,21 @@ def register_user(req):
                 'name': name,
                 'password': hashed_pw
         })
+        
+        sns_client = boto3.client('sns', region_name="us-east-1")
+        
+        SNS_TOPIC_ARN = "arn:aws:sns:us-east-1:423091328531:EmailNotificationTopic"
 
+        
+        response = sns_client.subscribe(
+            TopicArn=SNS_TOPIC_ARN,
+            Protocol='email',
+            Endpoint=email  # User's email
+        )
                 
         # redirect to login page
         return HttpResponseRedirect('/login')    
         
-      
-      
-                
                 
     except ClientError as e  :
         # redirect to home sry page 
@@ -160,17 +174,10 @@ def login_user(req):
         password = req.POST.get('password')
         # input validation function to be called 
         
-        
-        
-        table = dynamodb.Table('user')
-        
-        response = table.scan(
-            FilterExpression="email = :email",
-            ExpressionAttributeValues={":email": user_email})
-        
-        
+        res = scan_dynmo({"search" : "email" , "data" : user_email})
     
-        if response != [] :
+        if res.get("status") == True and res.get("data") != [] :
+            response = res.get("data")
             user_password = response['Items'][0].get('password')
             password_result = bcrypt.checkpw(password.encode('utf-8'), user_password.encode('utf-8'))
             
@@ -198,6 +205,19 @@ def login_user(req):
                     'username' : user_name,
                     'bio' : user_bio
                 }
+                
+                # send email
+                
+                sns_client = boto3.client('sns', region_name="us-east-1")
+                
+                response = sns_client.publish(
+                    TopicArn="arn:aws:sns:us-east-1:423091328531:EmailNotificationTopic",
+                    Message="You have just loged in at doc ",
+                    Subject="Loged in at doc share ",
+                    MessageAttributes={
+                    'email': {
+                'DataType': 'String',
+                'StringValue': user_email  }})
                 
                 response = redirect('/dashboard/profile')
                 response.set_cookie('session_token', session_token)
@@ -248,6 +268,8 @@ def new_bio(req) :
             
             table = dynamodb.Table('user')
             
+            email =  decode.get('email')
+            
             response = table.update_item(
             Key={'id': user_id  },
             UpdateExpression="SET bio = :bio",
@@ -260,15 +282,26 @@ def new_bio(req) :
             if 'Attributes' in response:
                 
                 
-                response = table.scan(
-                FilterExpression="id = :id",
-                ExpressionAttributeValues={":id": user_id})
+                sns_res = sns_send_email({
+                    "arn" : arn , 
+                    "msg" : "Your bio is just upgraded  !!" , 
+                    "subject" : "Bio changed !!" , 
+                    "email" : email
+                })
+                
+                response =  scan_dynmo({
+                    "search" : 'user_id' , 
+                    "data" : user_id
+                })
+                
+                if response.get("status") == False : 
+                    
+                    return render(req, 'Error/sorry.html')
                 
                 user_email = response['Items'][0].get('email')
                 user_name = response['Items'][0].get('name')
                 user_id = response['Items'][0].get('id')
                 user_bio = response['Items'][0].get('bio') or  ""
-                
                 
                 session_token = jwt.encode({
                     'user_id' : user_id,

@@ -3,6 +3,7 @@ from django.contrib import messages
 
 # import 
 import datetime
+import json
 
 # hashing 
 import jwt
@@ -12,10 +13,14 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
+QueueUrl = os.getenv("QueueUrl")
+arn = os.getenv("arn")
 
 
 #utils 
-from  .utils import  s3_bucket , table_checker
+from aws_service.aws_service import *
+
+
 
 #dynmo db 
 import boto3
@@ -175,18 +180,25 @@ def send_file(req):
                 
                 table_checker('user')
                 
-                table = dynamodb.Table('user')
+                # get data email
+                res = scan_dynmo({
+                    "search" : "email" , 
+                    "data" : receiver_email
+                })
                 
-                response = table.scan(
-                    FilterExpression="email = :email",
-                    ExpressionAttributeValues={":email": receiver_email})
                 
-                if 'Items' not in response: 
+                if res.get('status') ==  False:  
                     
                     return redirect('/share/')
                 
+                else : 
+                    
+                    response = res.get('data')
+                    
                 destination_bucket = response['Items'][0].get('id')
-            
+                
+                destination_email = response['Items'][0].get('email')
+                
             # get file name from req to send 
             file_to_send = req.POST['file_to_send']
             
@@ -230,9 +242,13 @@ def send_file(req):
                                 file_status = i
             
             copy_source = {
+                
                     'Bucket': user_id,
+                
                     'Key': file_status
-                }
+                
+                
+            }
                 
                 
                 # sending logic 
@@ -253,6 +269,33 @@ def send_file(req):
                             CopySource=copy_source,
                             Key=reciver_key
                             ) 
+                            
+                        # logic to delete it from s3 after 15 days 
+                        sqs_client = boto3.client('sqs')
+                        
+                        response = sqs_client.send_message(
+                            QueueUrl = QueueUrl,
+                            MessageBody=json.dumps({
+                                'file_name' : reciver_key , 
+                                'bucket' : destination_bucket, 
+                                'destination_email' : destination_email
+                            }) , 
+                            DelaySeconds = 900
+                        )    
+                        
+                        # send a email that user have recived a file 
+                        
+                        
+                        sns_client = boto3.client('sns', region_name="us-east-1")
+                
+                        response = sns_client.publish(
+                            TopicArn="arn:aws:sns:us-east-1:423091328531:EmailNotificationTopic",
+                        Message=f"you have recived a file from {decode.get('name')} !!",
+                        Subject=" recived a new file  ",
+                        MessageAttributes={
+                            'email': {
+                            'DataType': 'String',
+                            'StringValue': destination_email }})
                             
                         messages.error(req, " file send  !! ")
                                     

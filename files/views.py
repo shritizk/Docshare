@@ -8,7 +8,7 @@ import tempfile
 import jwt 
 
 # utils 
-from .utils import s3_bucket
+from aws_service.aws_service import *
 
 #env 
 import os
