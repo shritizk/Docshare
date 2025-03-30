@@ -179,9 +179,13 @@ def login_user(req):
         
         table = dynamodb.Table('user')
         
-        response = table.scan(
-            FilterExpression="email = :email",
-            ExpressionAttributeValues={":email": user_email})
+        # response = table.scan(
+        #     FilterExpression="email = :email",
+        #     ExpressionAttributeValues={":email": user_email})
+        response = table.query(
+                IndexName="EmailIndex",
+                KeyConditionExpression="email = :email",
+                ExpressionAttributeValues={":email":user_email})
         
         
         if response['Items']:

@@ -12,15 +12,32 @@ def table_checker(Table_Name):
 
     except ClientError as e:
         table_created = dynamodb.create_table(
-            TableName=Table_Name, 
-            KeySchema=[
-                {"AttributeName": "id", "KeyType": "HASH"}  # Use only 'id' as the primary key
+    TableName=Table_Name, 
+    KeySchema=[
+        {"AttributeName": "id", "KeyType": "HASH"}  # Use 'id' as the primary key
+    ],
+    AttributeDefinitions=[
+        {"AttributeName": "id", "AttributeType": "S"},  # Define 'id' as a string type
+        {"AttributeName": "email", "AttributeType": "S"}  # Define 'email' as a string type
+    ],
+    ProvisionedThroughput={"ReadCapacityUnits": 1,"WriteCapacityUnits": 1},
+    GlobalSecondaryIndexes=[
+        {
+            "IndexName": "EmailIndex",  # Name of the GSI
+            "KeySchema": [
+                {"AttributeName": "email", "KeyType": "HASH"}  # 'email' as the partition key for the GSI
             ],
-            AttributeDefinitions=[
-                {"AttributeName": "id", "AttributeType": "S"}  # Define 'id' as a string type
-            ],
-            BillingMode="PAY_PER_REQUEST",
-            )
+            "Projection": {
+                "ProjectionType": "ALL"  # Project all attributes of the item
+            },
+            "ProvisionedThroughput": {
+                "ReadCapacityUnits": 1,
+                "WriteCapacityUnits": 1
+            }
+        }
+    ]
+)
+
 
         table_created.wait_until_exists()
 
