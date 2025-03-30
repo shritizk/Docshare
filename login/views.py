@@ -146,7 +146,7 @@ def register_user(req):
         
                 
         # redirect to login page
-        return redirect('/login/')      
+        return redirect('/login')      
         
       
       
@@ -184,8 +184,7 @@ def login_user(req):
             ExpressionAttributeValues={":email": user_email})
         
         
-    
-        if response != [] :
+        if response['Items'] != [] :
             user_password = response['Items'][0].get('password')
             password_result = bcrypt.checkpw(password.encode('utf-8'), user_password.encode('utf-8'))
             
