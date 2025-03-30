@@ -184,7 +184,7 @@ def login_user(req):
             ExpressionAttributeValues={":email": user_email})
         
         
-        if response['Items'] != [] :
+        if response['Items']:
             user_password = response['Items'][0].get('password')
             password_result = bcrypt.checkpw(password.encode('utf-8'), user_password.encode('utf-8'))
             
