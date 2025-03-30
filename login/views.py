@@ -187,7 +187,7 @@ def login_user(req):
                 KeyConditionExpression="email = :email",
                 ExpressionAttributeValues={":email":user_email})
         
-        
+        print('response',response)
         if response['Items']:
             user_password = response['Items'][0].get('password')
             password_result = bcrypt.checkpw(password.encode('utf-8'), user_password.encode('utf-8'))
@@ -195,7 +195,7 @@ def login_user(req):
             user_id = response['Items'][0].get('id')
             user_name = response['Items'][0].get('name')
             user_bio = response['Items'][0].get('name') or ""            
-            
+            print('pass result',password_result)
             if(password_result ==True):
                 session_token = jwt.encode({
                     'user_id' : user_id,
@@ -239,7 +239,7 @@ def login_user(req):
                 return render(req,'Error/wrongPass.html')
        
         else : 
-            
+            print('sorry')
             return render(req, 'Error/sorry.html')
             
         
