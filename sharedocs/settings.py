@@ -129,6 +129,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 APPEND_SLASH = False
 
+
 CSRF_TRUSTED_ORIGINS = [
-    'https://bf917395343d45c1959505b9718c47a1.vfs.cloud9.us-east-1.amazonaws.com',
+    'https://ad07859963c84767a85132e70e6a3049.vfs.cloud9.us-east-1.amazonaws.com',
 ]
