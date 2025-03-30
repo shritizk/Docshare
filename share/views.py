@@ -255,7 +255,7 @@ def send_file(req):
                             Key=reciver_key
                             ) 
                         
-                        sqs_client = boto3.client('sqs')
+                        sqs_client = boto3.client('sqs', region_name='us-east-1')
                          
                         sqs_client = boto3.client('sqs')
                         sqs_client.send_message(
