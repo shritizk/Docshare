@@ -21,13 +21,7 @@ arn = os.getenv("arn")
 
 
 #utils 
-<<<<<<< HEAD
-from aws_service.aws_service import *
-
-
-=======
 from  .utils import  s3_bucket , table_checker
->>>>>>> a57d859 (done with project)
 
 #dynmo db 
 import boto3
@@ -187,62 +181,6 @@ def send_file(req):
                 
                 table_checker('user')
                 
-<<<<<<< HEAD
-                # get data email
-                res = scan_dynmo({
-                    "search" : "email" , 
-                    "data" : receiver_email
-                })
-                
-                
-                if res.get('status') ==  False:  
-                    
-                    return redirect('/share/')
-                
-                else : 
-                    
-                    response = res.get('data')
-                    
-                destination_bucket = response['Items'][0].get('id')
-                
-                destination_email = response['Items'][0].get('email')
-                
-            # get file name from req to send 
-            file_to_send = req.POST['file_to_send']
-            
-            if not  file_to_send : 
-                
-                messages.error(req, " no file selected to send  !!")
-                            
-                return redirect('/share/') 
-            
-            # reciver data 
-            
-            sender_check = s3_bucket(user_id)
-                
-            if sender_check ==  False :
-                
-                messages.error(req, " can not perform this action right now   !!")
-                            
-                return redirect('/share/') 
-            
-            else : 
-                
-                s3_client = boto3.client('s3', region_name='us-east-1')
-                
-                sender_data = s3_client.list_objects_v2(Bucket = user_id)
-                
-                file_names = [obj["Key"] for obj in sender_data.get("Contents", [])]
-                
-                if file_names == [] : 
-                    
-                    messages.error(req, " invalid action  !!")
-                            
-                    return redirect('/share/') 
-                
-                else : 
-                    
-=======
                 table = dynamodb.Table('user')
                 
                 response = table.scan(
@@ -290,7 +228,6 @@ def send_file(req):
                 
                 else : 
                     
->>>>>>> a57d859 (done with project)
                     for i in file_names : 
                         
                         if len(i.split('+')) == 3: 
@@ -299,7 +236,6 @@ def send_file(req):
                                 file_status = i
             
             copy_source = {
-<<<<<<< HEAD
                 
                     'Bucket': user_id,
                 
@@ -307,11 +243,6 @@ def send_file(req):
                 
                 
             }
-=======
-                    'Bucket': user_id,
-                    'Key': file_status
-                }
->>>>>>> a57d859 (done with project)
                 
                 
                 # sending logic 
@@ -333,7 +264,6 @@ def send_file(req):
                             Key=reciver_key
                             ) 
                             
-<<<<<<< HEAD
                         # logic to delete it from s3 after 15 days 
                         sqs_client = boto3.client('sqs')
                         
@@ -361,8 +291,6 @@ def send_file(req):
                             'DataType': 'String',
                             'StringValue': destination_email }})
                             
-=======
->>>>>>> a57d859 (done with project)
                         messages.error(req, " file send  !! ")
                                     
                         return redirect('/share/') 
