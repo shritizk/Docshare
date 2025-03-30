@@ -76,7 +76,8 @@ def home_page(req):
 
         return render(req, 'home/home.html', {'logged_in': logged_in })
 
-    except:
+    except Exception as e:
+        print(e)
         return render(req, 'Error/sorry.html')
 
 # this will redirect to signup form 
