@@ -203,8 +203,8 @@ def login_user(req):
                     'name' : user_name ,
                     'bio' : user_bio
                 },
-                SECRET_KEY  )
-                
+                SECRET_KEY )
+                print(session_token)
                 user_email = response['Items'][0].get('email')
                 user_name = response['Items'][0].get('name')
                 user_id = response['Items'][0].get('id')
