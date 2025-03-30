@@ -214,8 +214,7 @@ def login_user(req):
                 user_data =  {
                     'id' : user_id ,
                     'email' :user_email,
-                    'username' : user_name,
-                    'bio' : user_bio
+                    'username' : user_name
                 }
                 
                 # send email
@@ -293,45 +292,18 @@ def new_bio(req) :
             
             if 'Attributes' in response:
                 
+                sns_client = boto3.client('sns', region_name="us-east-1")
                 
-                sns_res = sns_send_email({
-                    "arn" : arn , 
-                    "msg" : "Your bio is just upgraded  !!" , 
-                    "subject" : "Bio changed !!" , 
-                    "email" : email
-                })
-                
-                response =  scan_dynmo({
-                    "search" : 'user_id' , 
-                    "data" : user_id
-                })
-                
-                if response.get("status") == False : 
-                    
-                    return render(req, 'Error/sorry.html')
-                
-                user_email = response['Items'][0].get('email')
-                user_name = response['Items'][0].get('name')
-                user_id = response['Items'][0].get('id')
-                user_bio = response['Items'][0].get('bio') or  ""
-                
-                session_token = jwt.encode({
-                    'user_id' : user_id,
-                    'email' : user_email ,
-                    'name' : user_name ,
-                    'bio' : user_bio
-                },
-                SECRET_KEY  )
-                
-                user_data =  {
-                    'id' : user_id ,
-                    'email' :user_email,
-                    'username' : user_name,
-                    'bio' : user_bio
-                }
-                
+                response = sns_client.publish(
+                    TopicArn=arn,
+                    Message="Your bio is just upgraded  !!",
+                    Subject="Bio changed !!",
+                    MessageAttributes={
+                    'email': {
+                'DataType': 'String',
+                'StringValue': email  }})
+
                 response = redirect('/dashboard/profile')
-                response.set_cookie('session_token', session_token)   
                 return response
                 
             else:
