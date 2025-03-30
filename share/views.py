@@ -176,7 +176,7 @@ def send_file(req):
                 
                 table_checker('user')
                 
-                table = dynamodb.Table('user')
+                table = dynamodb.Table('user', region_name='us-east-1')
                 
                 response = table.scan(
                     FilterExpression="email = :email",
