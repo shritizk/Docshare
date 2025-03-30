@@ -25,11 +25,15 @@ from botocore.exceptions import ClientError
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1') 
 
 #utils 
-from aws_service.aws_service import *
+from .utils import *
 
 #hashing
 import bcrypt
 
+# clients 
+dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+table = dynamodb.Table('user')
+sns_client = boto3.client('sns', region_name="us-east-1")
 
 
 # task to be done in front end 
@@ -97,36 +101,30 @@ def register_user(req):
             
         # get email , name and password of user to be updated inside the table 
         email = req.POST.get('email')
-        
-        # try to send email to verify 
-        
-        try : 
-            
-             #check for table / create table 
-            res = table_checker('user')
-            
-            if res == False :
-                
-                return render(req, 'Error/sorry.html')
-            
-            
-            res = scan_dynmo({"search" : "email" , "data" : user_email})
-            
-            if res.get('status') == True:
-                return render(req, 'Error/userAlreadyExist.html')
-                
-        except Exception as e :
-                
-                return HttpResponseRedirect('/login')  
-        
-        
         name = req.POST.get('name')
         password = req.POST.get('password')
+            
             
         # hash password to be stored 
         hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             
-        #uuid 
+        #check for table / create table 
+        res = table_checker('user')
+        
+        #add to table 
+        table = dynamodb.Table('user')
+        
+        # checking if email already exist 
+        
+        response = table.scan(
+            FilterExpression="email = :email",
+            ExpressionAttributeValues={":email": email})
+        
+        
+    
+        if response['Items']: 
+            return render(req, 'Error/userAlreadyExist.html')
+            #uuid 
         unique_id = str(uuid.uuid4())
         
         added_to_table = table.put_item(
@@ -136,21 +134,23 @@ def register_user(req):
                 'name': name,
                 'password': hashed_pw
         })
-        
-        sns_client = boto3.client('sns', region_name="us-east-1")
-        
-        SNS_TOPIC_ARN = "arn:aws:sns:us-east-1:423091328531:EmailNotificationTopic"
 
-        
-        response = sns_client.subscribe(
+       
+        # Subscribe user to SNS for email verification
+        sns = sns_client.subscribe(
             TopicArn=SNS_TOPIC_ARN,
             Protocol='email',
-            Endpoint=email  # User's email
+            Endpoint=email
         )
+        
+        
                 
         # redirect to login page
-        return HttpResponseRedirect('/login')    
+        return redirect('/login/')      
         
+      
+      
+                
                 
     except ClientError as e  :
         # redirect to home sry page 
@@ -161,6 +161,8 @@ def register_user(req):
         
         print()
         return redirect('/signup')
+        
+        
         
 @csrf_exempt
 def login_user(req):
@@ -174,10 +176,16 @@ def login_user(req):
         password = req.POST.get('password')
         # input validation function to be called 
         
-        res = scan_dynmo({"search" : "email" , "data" : user_email})
+        
+        table = dynamodb.Table('user')
+        
+        response = table.scan(
+            FilterExpression="email = :email",
+            ExpressionAttributeValues={":email": user_email})
+        
+        
     
-        if res.get("status") == True and res.get("data") != [] :
-            response = res.get("data")
+        if response != [] :
             user_password = response['Items'][0].get('password')
             password_result = bcrypt.checkpw(password.encode('utf-8'), user_password.encode('utf-8'))
             
