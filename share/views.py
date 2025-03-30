@@ -3,10 +3,7 @@ from django.contrib import messages
 
 # import 
 import datetime
-<<<<<<< HEAD
 import json
-=======
->>>>>>> a57d859 (done with project)
 
 # hashing 
 import jwt
