@@ -169,11 +169,9 @@ def send_file(req):
                 FilterExpression="email = :email",
                 ExpressionAttributeValues={":email": receiver_email}
             )
-            
-            if not response.get('Items'): 
+
+            if 'Items' not in response:
                 return redirect('/share/')
-            
-            print(response)
             
             destination_bucket = response['Items'][0].get('id')
 
@@ -215,18 +213,17 @@ def send_file(req):
             # Sending logic
             try:
                 s3_bucket(destination_bucket)
-               
-                s3_bucket(destination_bucket)
-                reciver_key = f"{destination_bucket}+recived_from=+{copy_source.get('Bucket')}+{file_status}"
-                s3_client.copy_object(
+                if destination_check:
+                    reciver_key = f"{destination_bucket}+recived_from=+{copy_source.get('Bucket')}+{file_status}"
+                    s3_client.copy_object(
                         Bucket=destination_bucket,
                         CopySource=copy_source,
                         Key=reciver_key
                     )
 
                     # Send message to SQS
-                sqs_client = boto3.client('sqs', region_name='us-east-1')  # Ensure region_name is specified
-                sqs_client.send_message(
+                    sqs_client = boto3.client('sqs', region_name='us-east-1')  # Ensure region_name is specified
+                    sqs_client.send_message(
                         QueueUrl=QueueUrl,
                         MessageBody=json.dumps({
                             'file_name': reciver_key,
@@ -236,21 +233,16 @@ def send_file(req):
                         DelaySeconds=900
                     )
 
-                messages.error(req, "File sent successfully!")
-                return redirect('/share/')
-            
+                    messages.error(req, "File sent successfully!")
+                    return redirect('/share/')
+                else:
+                    messages.error(req, "Can't reach this user at this time!")
+                    return redirect('/share/')
             except Exception as e:
-            
                 logger.error(f"Error during file sending: {str(e)}")
-            
                 messages.error(req, "Something went wrong, can't send file right now. Try again later.")
-            
                 return redirect('/share/')
-        
         except jwt.ExpiredSignatureError:
-        
             return redirect('/')
-        
         except jwt.InvalidTokenError:
-        
             return redirect('/')
