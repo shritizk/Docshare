@@ -31,9 +31,10 @@ from .utils import *
 import bcrypt
 
 # clients 
-dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
-table = dynamodb.Table('user')
 sns_client = boto3.client('sns', region_name="us-east-1")
+dynamodb = boto3.resource('dynamodb', region_name="us-east-1")
+table = dynamodb.Table('user')
+
 
 
 # task to be done in front end 
@@ -111,9 +112,7 @@ def register_user(req):
             
         #check for table / create table 
         res = table_checker('user')
-        
-        #add to table 
-        table = dynamodb.Table('user')
+
         
         # checking if email already exist 
         
@@ -177,8 +176,6 @@ def login_user(req):
         password = req.POST.get('password')
         # input validation function to be called 
         
-        
-        table = dynamodb.Table('user')
         
         # response = table.scan(
         #     FilterExpression="email = :email",
@@ -277,8 +274,6 @@ def new_bio(req) :
             user_id = decode.get('user_id')
             
             new_bio = req.POST.get('bio')
-            
-            table = dynamodb.Table('user')
             
             email =  decode.get('email')
             
