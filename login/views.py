@@ -261,7 +261,8 @@ def logout_user(request):
     
     
 
-# edit bio            
+# edit bio   
+@csrf_exempt
 def new_bio(req) : 
     
     session_token = req.COOKIES.get('session_token')
