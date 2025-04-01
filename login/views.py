@@ -11,7 +11,7 @@ import uuid
 #token
 import jwt
 import json
-
+import datetime
 # env 
 import os
 from dotenv import load_dotenv
@@ -199,7 +199,8 @@ def login_user(req):
                     'user_id' : user_id,
                     'email' : user_email ,
                     'name' : user_name ,
-                    'bio' : user_bio
+                    'bio' : user_bio,
+                    'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
                 },
                 SECRET_KEY )
                 print(session_token)
